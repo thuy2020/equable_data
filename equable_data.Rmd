@@ -1,0 +1,59 @@
+---
+title: "Untitled"
+output: html_document
+date: "2023-05-08"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+options(scipen = 9999)
+```
+
+# Equable Data
+```{r}
+state <- data_frame(state.abb, state.name) %>% rename(StateName = state.name) %>% 
+  add_row(state.abb = "DC", StateName = "District of Columbia")
+
+equable <- readxl::read_xlsx("data/Teacher and Public School Funding Data.xlsx", sheet = "Just Teachers") %>% 
+  filter(Year == 2020) %>% 
+  group_by(StateName) %>% 
+  mutate(equable_teach_liabilities_state_tot = sum(Teach_Liabilities)) %>% 
+  arrange(StateName) %>% 
+  select(StateName, equable_teach_liabilities_state_tot, Plan_Shorthand) %>%
+  rename ( equable_plan_name = Plan_Shorthand) %>% left_join(state)
+
+```
+
+```{r}
+acfrs <- readRDS("data/data_from_dbsite_2020.RDS") %>% 
+  filter(category == "School District" & net_pension_liability != 0) %>%
+group_by(state) %>% 
+    mutate(acfrs_total_liabilities = sum(total_liabilities),
+         acfrs_netpension_liabilities = sum(net_pension_liability)) %>%
+  select(state, id, name, total_liabilities, net_pension_liability, acfrs_total_liabilities, acfrs_netpension_liabilities) %>% 
+  rename(state.abb = state,
+         acfrs_plan_name = name)  
+
+```
+
+
+```{r}
+equable_acfrs <- equable %>% left_join(state) %>% 
+  left_join(acfrs) %>% 
+  mutate(pct_equable_acfrs_tot_liabilities = equable_teach_liabilities_state_tot/acfrs_total_liabilities, 
+         pct_equable_acfrs_netpension_liabilities = equable_teach_liabilities_state_tot/acfrs_netpension_liabilities) %>%  distinct() %>% select(-state.abb)
+```
+CA has total of 1018 School districts, 5,852,544 students. ACFRs collected 934 sd. Equatable liabilities is 4.6 times Acfrs net pension liabilities.
+
+```{r}
+equable_acfrs %>% filter(StateName == "California")
+
+```
+
+Florida has 96 school districts. Acfrs covers 78. Equatable liabilities is 4.5 times Acfrs net pension liabilities. 
+
+```{r}
+equable_acfrs %>% filter(StateName == "Florida")
+```
+
