@@ -25,6 +25,7 @@ equable <- readxl::read_xlsx("data/Teacher and Public School Funding Data.xlsx",
 
 ```
 
+# Acfrs data
 ```{r}
 acfrs <- readRDS("data/data_from_dbsite_2020.RDS") %>% 
   filter(category == "School District" & net_pension_liability != 0) %>%
@@ -37,19 +38,22 @@ group_by(state) %>%
 
 ```
 
-
+# Joining
 ```{r}
 equable_acfrs <- equable %>% left_join(state) %>% 
   left_join(acfrs) %>% 
   mutate(pct_equable_acfrs_tot_liabilities = equable_teach_liabilities_state_tot/acfrs_total_liabilities, 
          pct_equable_acfrs_netpension_liabilities = equable_teach_liabilities_state_tot/acfrs_netpension_liabilities) %>%  distinct() %>% select(-state.abb)
 ```
+# View California 
+
 CA has total of 1018 School districts, 5,852,544 students. ACFRs collected 934 sd. Equatable liabilities is 4.6 times Acfrs net pension liabilities.
 
 ```{r}
 equable_acfrs %>% filter(StateName == "California")
 
 ```
+# View Florida 
 
 Florida has 96 school districts. Acfrs covers 78. Equatable liabilities is 4.5 times Acfrs net pension liabilities. 
 
