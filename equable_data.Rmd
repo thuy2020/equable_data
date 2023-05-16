@@ -16,48 +16,63 @@ state <- data_frame(state.abb, state.name) %>% rename(StateName = state.name) %>
   add_row(state.abb = "DC", StateName = "District of Columbia")
 
 equable <- readxl::read_xlsx("data/Teacher and Public School Funding Data.xlsx", sheet = "Just Teachers") %>% 
-  filter(Year == 2020) %>% 
+  filter(Year == 2020 | Year == 2021) %>% 
   group_by(StateName) %>% 
-  mutate(equable_teach_liabilities_state_tot = sum(Teach_Liabilities)) %>% 
+  mutate(equable_teach_liabilities_bystate = sum(UAL)) %>% 
   arrange(StateName) %>% 
-  select(StateName, equable_teach_liabilities_state_tot, Plan_Shorthand) %>%
+  select(StateName, equable_teach_liabilities_bystate, Plan_Shorthand, Year) %>%
   rename ( equable_plan_name = Plan_Shorthand) %>% left_join(state)
-
 ```
-
 # Acfrs data
 ```{r}
-acfrs <- readRDS("data/data_from_dbsite_2020.RDS") %>% 
-  filter(category == "School District" & net_pension_liability != 0) %>%
+acfrs_2020 <- readRDS("data/data_from_dbsite_2020.RDS") %>% 
+  filter(category == "School District" ) 
+  
+acfrs_2021 <- readRDS("data/data_from_dbsite_2021.RDS") %>% 
+  filter(category == "School District") 
+
+acfrs <- acfrs_2020 %>% rbind(acfrs_2021) %>% 
+  select(state, id, name, net_pension_liability, year) %>% 
 group_by(state) %>% 
-    mutate(acfrs_total_liabilities = sum(total_liabilities),
-         acfrs_netpension_liabilities = sum(net_pension_liability)) %>%
-  select(state, id, name, total_liabilities, net_pension_liability, acfrs_total_liabilities, acfrs_netpension_liabilities) %>% 
-  rename(state.abb = state,
-         acfrs_plan_name = name)  
+    mutate(acfrs_netpension_liabilities_bystate = sum(net_pension_liability)) %>%
+  ungroup() %>% 
+  select(-c(name, net_pension_liability, id)) %>% distinct() %>% 
+  rename(state.abb = state)
 
 ```
+
 
 # Joining
 ```{r}
 equable_acfrs <- equable %>% left_join(state) %>% 
   left_join(acfrs) %>% 
-  mutate(pct_equable_acfrs_tot_liabilities = equable_teach_liabilities_state_tot/acfrs_total_liabilities, 
-         pct_equable_acfrs_netpension_liabilities = equable_teach_liabilities_state_tot/acfrs_netpension_liabilities) %>%  distinct() %>% select(-state.abb)
+  filter(acfrs_netpension_liabilities_bystate != 0) %>% 
+  mutate(pct_equable_acfrs = equable_teach_liabilities_bystate/acfrs_netpension_liabilities_bystate) %>%  distinct() %>% select(-state.abb) %>% arrange(desc(pct_equable_acfrs))
+
 ```
 # View California 
 
 CA has total of 1018 School districts, 5,852,544 students. ACFRs collected 934 sd. Equatable liabilities is 4.6 times Acfrs net pension liabilities.
 
 ```{r}
-equable_acfrs %>% filter(StateName == "California")
-
+equable_acfrs %>% filter(StateName == "California") 
 ```
+pct_equable_acfrs_tot_liabilities = equable_teach_liabilities_state_tot/acfrs_total_liabilities, 
+pct_equable_acfrs_netpension_liabilities = equable_teach_liabilities_state_tot/acfrs_netpension_liabilities
+
 # View Florida 
 
 Florida has 96 school districts. Acfrs covers 78. Equatable liabilities is 4.5 times Acfrs net pension liabilities. 
 
 ```{r}
 equable_acfrs %>% filter(StateName == "Florida")
+```
+
+```{r}
+equable_acfrs %>% filter(StateName == "Texas")
+```
+
+```{r}
+equable_acfrs %>% filter(StateName == "Montana")
 ```
 
