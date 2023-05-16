@@ -46,10 +46,22 @@ group_by(state) %>%
 ```{r}
 equable_acfrs <- equable %>% left_join(state) %>% 
   left_join(acfrs) %>% 
-  filter(acfrs_netpension_liabilities_bystate != 0) %>% 
+  filter(acfrs_netpension_liabilities_bystate != 0) %>%  # filter out to calculate percentage
   mutate(pct_equable_acfrs = equable_teach_liabilities_bystate/acfrs_netpension_liabilities_bystate) %>%  distinct() %>% select(-state.abb) %>% arrange(desc(pct_equable_acfrs))
 
 ```
+
+The biggest gap is Connecticut. 
+
+```{r}
+acfrs_2020 %>% filter(state == "CT")
+
+acfrs_2021 %>% filter(state == "CT")
+```
+
+
+
+
 # View California 
 
 CA has total of 1018 School districts, 5,852,544 students. ACFRs collected 934 sd. Equatable liabilities is 4.6 times Acfrs net pension liabilities.
