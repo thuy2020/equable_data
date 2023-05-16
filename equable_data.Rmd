@@ -7,6 +7,9 @@ date: "2023-05-08"
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(dplyr)
+library(tidyr)
+library(janitor)
+library(stringr)
 options(scipen = 9999)
 ```
 
@@ -51,15 +54,46 @@ equable_acfrs <- equable %>% left_join(state) %>%
 
 ```
 
+# NCES
+
+List of all school districts that has 1 or more student. 
+NOTE: Some acfrs entities are categorized as "school districts" without any students. 
+```{r}
+nces <- rio::import(here::here("data", "ncesdata_DBBFFFC.xlsx"), skip = 14) %>% 
+  clean_names() %>% 
+  select(nces_district_id, district_name, county_name, city, state, students) %>% 
+  rename(nces_original_name = district_name,
+    ncesID = nces_district_id) %>% 
+    drop_na(nces_original_name) %>% 
+# take out 5 territories "AS" "DC" "GU" "PR" "VI"
+ # filter(!state %in% c("AS", "DC", "GU", "PR", "VI")) %>% 
+  
+# for NCES ID that has only 6 digits, adding a leading 0
+  mutate(ncesID = ifelse(str_length(ncesID) < 7, paste0("0", ncesID), ncesID)) %>% 
+mutate(students = as.numeric(students)) 
+```
+
+# Connecticut
+
 The biggest gap is Connecticut. 
 
 ```{r}
+# all CT entities in acfrs 2020 and 2021
 acfrs_2020 %>% filter(state == "CT")
 
 acfrs_2021 %>% filter(state == "CT")
 ```
 
+```{r}
+# all CT school districts in NCES
+nces %>% filter(state == "CT") %>% arrange(desc(students)) %>% 
+  select(state, ncesID, nces_original_name, students)
+```
+# Montana
 
+```{r}
+equable_acfrs %>% filter(StateName == "Montana")
+```
 
 
 # View California 
@@ -69,8 +103,7 @@ CA has total of 1018 School districts, 5,852,544 students. ACFRs collected 934 s
 ```{r}
 equable_acfrs %>% filter(StateName == "California") 
 ```
-pct_equable_acfrs_tot_liabilities = equable_teach_liabilities_state_tot/acfrs_total_liabilities, 
-pct_equable_acfrs_netpension_liabilities = equable_teach_liabilities_state_tot/acfrs_netpension_liabilities
+
 
 # View Florida 
 
@@ -84,7 +117,6 @@ equable_acfrs %>% filter(StateName == "Florida")
 equable_acfrs %>% filter(StateName == "Texas")
 ```
 
-```{r}
-equable_acfrs %>% filter(StateName == "Montana")
-```
+
+
 
