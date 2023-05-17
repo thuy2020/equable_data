@@ -20,11 +20,11 @@ state <- data_frame(state.abb, state.name) %>% rename(StateName = state.name) %>
 
 equable <- readxl::read_xlsx("data/Teacher and Public School Funding Data.xlsx", sheet = "Just Teachers") %>% 
   filter(Year == 2020 | Year == 2021) %>% 
-  group_by(StateName) %>% 
+  group_by(StateName, Year) %>% 
   mutate(equable_teach_liabilities_bystate = sum(UAL)) %>% 
   arrange(StateName) %>% 
-  select(StateName, equable_teach_liabilities_bystate, Plan_Shorthand, Year) %>%
-  rename ( equable_plan_name = Plan_Shorthand) %>% left_join(state)
+  select(StateName, equable_teach_liabilities_bystate, Year) %>%
+  rename (year = Year) %>% left_join(state)
 ```
 # Acfrs data
 ```{r}
@@ -36,11 +36,11 @@ acfrs_2021 <- readRDS("data/data_from_dbsite_2021.RDS") %>%
 
 acfrs <- acfrs_2020 %>% rbind(acfrs_2021) %>% 
   select(state, id, name, net_pension_liability, year) %>% 
-group_by(state) %>% 
+group_by(state, year) %>% 
     mutate(acfrs_netpension_liabilities_bystate = sum(net_pension_liability)) %>%
   ungroup() %>% 
   select(-c(name, net_pension_liability, id)) %>% distinct() %>% 
-  rename(state.abb = state)
+  rename(state.abb = state) %>% arrange(state.abb)
 
 ```
 
@@ -79,7 +79,7 @@ The biggest gap is Connecticut.
 
 ```{r}
 # all CT entities in acfrs 2020 and 2021
-acfrs_2020 %>% filter(state == "CT")
+acfrs_2020 %>% filter(state == "CT") %>% select(state, name, net_pension_liability) %>% arrange(desc(net_pension_liability))
 
 acfrs_2021 %>% filter(state == "CT")
 ```
